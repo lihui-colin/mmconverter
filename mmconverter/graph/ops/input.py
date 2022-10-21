@@ -2,6 +2,7 @@ from ..node import MMNode
 
 
 class Input(MMNode):
+    shortname = "input"
     def __repr__(self):
         return "Input()"
 

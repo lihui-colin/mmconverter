@@ -57,20 +57,21 @@ def IsVarName(str):
 
 
 def MergeBN(graph):
-    mask = [False] * len(graph.nodes)
+    node_cnt = len(graph)
+    mask = [False] * len(graph)
     filter_nodes = []
-    for i in range(len(graph.nodes)):
+    for i in range(node_cnt):
         if mask[i]:
             continue
         mask[i] = True
-        filter_nodes.append(graph.nodes[i])
+        filter_nodes.append(graph[i])
         if (
-            isinstance(graph.nodes[i], ops.BatchNorm2d)
-            and ((i + 1) < len(graph.nodes))
-            and isinstance(graph.nodes[i + 1], ops.Scale)
+            isinstance(graph[i], ops.BatchNorm2d)
+            and ((i + 1) < node_cnt)
+            and isinstance(graph[i + 1], ops.Scale)
         ):
-            bn_node = graph.nodes[i]
-            scale_node = graph.nodes[i + 1]
+            bn_node = graph[i]
+            scale_node = graph[i + 1]
             bn_node.weight = scale_node.weight
             bn_node.bias = scale_node.bias
             bn_node.output_names = scale_node.output_names
@@ -78,7 +79,7 @@ def MergeBN(graph):
     graph.nodes = filter_nodes
 
 
-def Load(caffe_proto_file, caffe_model_file, model_name):
+def Load(caffe_proto_file, caffe_model_file, model_name) -> graph.MMGraph:
     logger.info(f"load caffe model: {caffe_proto_file} {caffe_model_file}")
     graph, params = LoadCaffeModel(caffe_proto_file, caffe_model_file)
     netLayerCaffe = GetNetLayerCaffe(graph)
@@ -97,33 +98,33 @@ def Load(caffe_proto_file, caffe_model_file, model_name):
             logger.error(f"  {op}")
         return None
 
-    top_names = {}
-    for layer in netLayerCaffe:
-        cls_obj = OPS.get(layer.type)
-        shortname = cls_obj.shortname
-        if not IsVarName(layer.name):
-            # 层名称不符合python规范，修改层名称
-            if not IsVarName(layer.name):
-                new_name = f"{shortname}_{layer.name}"
-                for layer_param in netModelCaffe:
-                    if layer.name == layer_param.name:
-                        layer_param.name = new_name
-                        layer.name = new_name
-                        break
+    # top_names = {}
+    # for layer in netLayerCaffe:
+    #     cls_obj = OPS.get(layer.type)
+    #     shortname = cls_obj.shortname
+    #     if not IsVarName(layer.name):
+    #         # 层名称不符合python规范，修改层名称
+    #         if not IsVarName(layer.name):
+    #             new_name = f"{shortname}_{layer.name}"
+    #             for layer_param in netModelCaffe:
+    #                 if layer.name == layer_param.name:
+    #                     layer_param.name = new_name
+    #                     layer.name = new_name
+    #                     break
 
-        # 层输出变量名称不符合python规范，则需要修改
-        for out_var in layer.top:
-            out_var_name = out_var
-            if not IsVarName(out_var_name):
-                out_var_name = f"{shortname}_{out_var_name}"
-            # assert out_var_name not in top_names, out_var_name
-            top_names[out_var] = out_var_name
+    #     # 层输出变量名称不符合python规范，则需要修改
+    #     for out_var in layer.top:
+    #         out_var_name = out_var
+    #         if not IsVarName(out_var_name):
+    #             out_var_name = f"{shortname}_{out_var_name}"
+    #         # assert out_var_name not in top_names, out_var_name
+    #         top_names[out_var] = out_var_name
 
-            for i in range(len(layer.top)):
-                layer.top[i] = top_names[layer.top[i]]
+    #         for i in range(len(layer.top)):
+    #             layer.top[i] = top_names[layer.top[i]]
 
-            for i in range(len(layer.bottom)):
-                layer.bottom[i] = top_names[layer.bottom[i]]
+    #         for i in range(len(layer.bottom)):
+    #             layer.bottom[i] = top_names[layer.bottom[i]]
 
     logger.info(f"generating graph")
     graph = MMGraph(model_name)
@@ -134,13 +135,17 @@ def Load(caffe_proto_file, caffe_model_file, model_name):
                 params = [Blob(blob) for blob in layer_param.blobs]
         cls_obj = OPS.get(layer.type)
         node = cls_obj()(layer, params)
+        node.name = f"mm_{node.name}"
+         
+        node.input_names = [f"var_{x}" for x in node.input_names]
+        node.output_names = [f"var_{x}" for x in node.output_names]
         if isinstance(node, list):
             for s_node in node:
                 graph.addNode(s_node)
         else:
             graph.addNode(node)
-    
+
     logger.info(f"optimize graph")
-    MergeBN(graph) 
+    MergeBN(graph)
     graph.resort_nodes()
     return graph

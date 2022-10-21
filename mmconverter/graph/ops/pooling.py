@@ -2,6 +2,7 @@ from ..node import MMNode
 
 
 class MaxPool2d(MMNode):
+    shortname = "pool"
     def __init__(self, name, input_names, output_names) -> None:
         super().__init__(name, input_names, output_names)
         self.kernel_size = None
@@ -24,6 +25,7 @@ class MaxPool2d(MMNode):
 
 
 class AdaptiveMaxPool2d(MMNode):
+    shortname = "pool"
     def __init__(self, name, input_names, output_names) -> None:
         super().__init__(name, input_names, output_names)
         self.output_size = None
@@ -39,6 +41,7 @@ class AdaptiveMaxPool2d(MMNode):
 
 
 class AdaptiveAvgPool2d(MMNode):
+    shortname = "pool"
     def __init__(self, name, input_names, output_names) -> None:
         super().__init__(name, input_names, output_names)
         self.output_size = None
@@ -51,6 +54,7 @@ class AdaptiveAvgPool2d(MMNode):
 
 
 class AvgPool2d(MMNode):
+    shortname = "pool"
     def __init__(self, name, input_names, output_names) -> None:
         super().__init__(name, input_names, output_names)
         self.kernel_size = None

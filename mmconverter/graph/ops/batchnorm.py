@@ -2,6 +2,7 @@ from ..node import MMNode, MMParameter
 
 
 class BatchNorm2d(MMNode):
+    shortname = "bn"
     def __init__(self, name, input_names, output_names) -> None:
         super().__init__(name, input_names, output_names)
         self.num_features = None
@@ -26,6 +27,7 @@ class BatchNorm2d(MMNode):
 
 
 class Scale(MMNode):
+    shortname = "scale"
     def __init__(self, name, input_names, output_names) -> None:
         super().__init__(name, input_names, output_names)
 

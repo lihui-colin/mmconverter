@@ -10,6 +10,7 @@ class EltwiseOp(Enum):
 
 
 class Add(MMNode):
+    shortname = "add"
     def __init__(self, name, input_names, output_names) -> None:
         super().__init__(name, input_names, output_names)
 
@@ -27,6 +28,7 @@ class Add(MMNode):
 
 
 class Mul(MMNode):
+    shortname = "mul"
     def __init__(self, name, input_names, output_names) -> None:
         super().__init__(name, input_names, output_names)
 

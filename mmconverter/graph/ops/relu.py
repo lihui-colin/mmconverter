@@ -2,6 +2,7 @@ from ..node import MMNode
 
 
 class ReLU(MMNode):
+    shortname = "relu"
     def __init__(self, name, input_names, output_names) -> None:
         super().__init__(name, input_names, output_names)
         self.inplace = False
@@ -15,6 +16,7 @@ class ReLU(MMNode):
 
 
 class LeakyReLU(MMNode):
+    shortname = "leakyrelu"
     def __init__(self, name, input_names, output_names) -> None:
         super().__init__(name, input_names, output_names)
         self.negative_slope = 0.01

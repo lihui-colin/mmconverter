@@ -2,6 +2,7 @@ from ..node import MMNode, MMParameter
 
 
 class Conv2d(MMNode):
+    shortname = "conv"
     def __init__(self, name, input_names, output_names) -> None:
         super().__init__(name, input_names, output_names)
         self.in_channels = None
