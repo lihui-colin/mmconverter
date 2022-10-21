@@ -1,5 +1,9 @@
-from .conv import Conv2d
-from .pooling import MaxPool2d
-from .relu import ReLU, LeakyReLU
+from .conv import *
+from .pooling import *
+from .relu import *
 from .eltwise import *
-from .input import Input
+from .input import *
+from .batchnorm import *
+from .softmax import *
+from .linear import *
+from .reshape import *

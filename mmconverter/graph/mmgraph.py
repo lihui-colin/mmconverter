@@ -85,7 +85,7 @@ class MMGraph:
 
     def state_dict(self):
         state_dict = {}
-        for node in self.nodes:
+        for node in self.nodes: 
             state_dict.update(node.parameters())
         return state_dict
 

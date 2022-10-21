@@ -18,7 +18,7 @@ class Pooling:
         kernel_size = layer_param.pooling_param.kernel_size
         pads = layer_param.pooling_param.pad
         strides = layer_param.pooling_param.stride
-
+ 
         if (
             layer_param.pooling_param.kernel_h != 0
             and layer_param.pooling_param.kernel_w != 0
@@ -37,10 +37,6 @@ class Pooling:
                 layer_param.pooling_param.pad_h,
                 layer_param.pooling_param.pad_w,
             ]
-
-        # # 由于 caffe 与 onnx 的 pad 的计算的原因，将 pad 属性，单独创建一个节点
-        # pads = [0, 0, 0, 0]
-        # pass strides
 
         if (
             layer_param.pooling_param.stride_h != 0
@@ -78,8 +74,10 @@ class Pooling:
         
         if pool_value == 0 and global_value is True:
             node = graph.AdaptiveMaxPool2d(layer_param.name, input_names, output_names)
+            node.output_size = (1, 1)
         elif pool_value == 1 and global_value is True:
             node = graph.AdaptiveAvgPool2d(layer_param.name, input_names, output_names)
+            node.output_size = (1, 1)
         elif pool_value == 0 and global_value is False:
             node = graph.MaxPool2d(layer_param.name, input_names, output_names)
             node.kernel_size = kernel_size
@@ -87,7 +85,7 @@ class Pooling:
             node.padding = pads
             node.ceil_mode = ceil_mode
         elif pool_value == 1 and global_value is False:
-            node = graph.AvgPool2d
+            node = graph.AvgPool2d(layer_param.name, input_names, output_names)
             node.kernel_size = kernel_size
             node.stride = strides
             node.padding = pads

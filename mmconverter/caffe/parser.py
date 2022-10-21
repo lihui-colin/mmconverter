@@ -3,7 +3,10 @@ from google.protobuf import text_format
 from ..builder import CAFFEOPS as OPS
 from .ops import *
 from ..graph import MMGraph
+from ..graph import ops
 from loguru import logger
+from .blob import Blob
+from tqdm import tqdm
 
 
 def LoadCaffeModel(net_path, model_path):
@@ -53,7 +56,30 @@ def IsVarName(str):
     return str[0].isalpha()
 
 
+def MergeBN(graph):
+    mask = [False] * len(graph.nodes)
+    filter_nodes = []
+    for i in range(len(graph.nodes)):
+        if mask[i]:
+            continue
+        mask[i] = True
+        filter_nodes.append(graph.nodes[i])
+        if (
+            isinstance(graph.nodes[i], ops.BatchNorm2d)
+            and ((i + 1) < len(graph.nodes))
+            and isinstance(graph.nodes[i + 1], ops.Scale)
+        ):
+            bn_node = graph.nodes[i]
+            scale_node = graph.nodes[i + 1]
+            bn_node.weight = scale_node.weight
+            bn_node.bias = scale_node.bias
+            bn_node.output_names = scale_node.output_names
+            mask[i + 1] = True
+    graph.nodes = filter_nodes
+
+
 def Load(caffe_proto_file, caffe_model_file, model_name):
+    logger.info(f"load caffe model: {caffe_proto_file} {caffe_model_file}")
     graph, params = LoadCaffeModel(caffe_proto_file, caffe_model_file)
     netLayerCaffe = GetNetLayerCaffe(graph)
     netModelCaffe = GetNetModelCaffe(params)
@@ -69,7 +95,7 @@ def Load(caffe_proto_file, caffe_model_file, model_name):
         logger.error("Unsupport OP:")
         for op in unsupport_ops:
             logger.error(f"  {op}")
-        return
+        return None
 
     top_names = {}
     for layer in netLayerCaffe:
@@ -90,7 +116,7 @@ def Load(caffe_proto_file, caffe_model_file, model_name):
             out_var_name = out_var
             if not IsVarName(out_var_name):
                 out_var_name = f"{shortname}_{out_var_name}"
-            assert out_var_name not in top_names, out_var_name
+            # assert out_var_name not in top_names, out_var_name
             top_names[out_var] = out_var_name
 
             for i in range(len(layer.top)):
@@ -99,14 +125,22 @@ def Load(caffe_proto_file, caffe_model_file, model_name):
             for i in range(len(layer.bottom)):
                 layer.bottom[i] = top_names[layer.bottom[i]]
 
+    logger.info(f"generating graph")
     graph = MMGraph(model_name)
-    for layer in netLayerCaffe:
+    for layer in tqdm(netLayerCaffe):
         params = []
         for layer_param in netModelCaffe:
             if layer.name == layer_param.name:
-                params = layer_param.blobs
+                params = [Blob(blob) for blob in layer_param.blobs]
         cls_obj = OPS.get(layer.type)
         node = cls_obj()(layer, params)
-        graph.addNode(node)
+        if isinstance(node, list):
+            for s_node in node:
+                graph.addNode(s_node)
+        else:
+            graph.addNode(node)
+    
+    logger.info(f"optimize graph")
+    MergeBN(graph) 
     graph.resort_nodes()
     return graph

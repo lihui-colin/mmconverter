@@ -22,9 +22,9 @@ class MMNode:
         state_dict = {}
         for name, v in self.__dict__.items():
             if isinstance(v, MMParameter):
-                state_dict[f'{self.name}.{name}'] = v.data
+                state_dict[f"{self.name}.{name}"] = v.data
         return state_dict
-    
+
     def infer_shape(self):
         pass
 
