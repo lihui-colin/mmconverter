@@ -1,3 +1,4 @@
+from os import access
 from . import ops
 
 
@@ -31,7 +32,7 @@ class MMGraph:
         self._nodes.append(node)
         self._dirty = True
 
-    def resort_nodes(self):
+    def sanitizeGraph(self):
         self.input_nodes = []
         for node in self._nodes:
             if isinstance(node, ops.Input):
@@ -56,11 +57,22 @@ class MMGraph:
                     output_nodes.append(node)
                     break
         self.output_nodes = list(set(output_nodes))
-        self._dirty = True
+
+        # TODO
+        # 从输出节点开始遍历所有节点，多节点重新排序
+        
+        for idx, node in enumerate(self._nodes):
+            node.index = idx
+        visited_flag = [False] * len(self._nodes)
+        new_nodes = []
+        for start_node in output_nodes:
+            visited_flag[start_node.index] = True
+
+        self._dirty = False
 
     def code(self):
         if self._dirty:
-            self.resort_nodes()
+            self.sanitizeGraph()
 
         class_name = self.name.capitalize()
         code_lines = [
