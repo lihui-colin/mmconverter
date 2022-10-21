@@ -127,25 +127,26 @@ def Load(caffe_proto_file, caffe_model_file, model_name) -> graph.MMGraph:
     #             layer.bottom[i] = top_names[layer.bottom[i]]
 
     logger.info(f"generating graph")
-    graph = MMGraph(model_name)
+    mm_graph = MMGraph(model_name)
+    mm_nodes = []
     for layer in tqdm(netLayerCaffe):
         params = []
         for layer_param in netModelCaffe:
             if layer.name == layer_param.name:
                 params = [Blob(blob) for blob in layer_param.blobs]
         cls_obj = OPS.get(layer.type)
-        node = cls_obj()(layer, params)
+        node = cls_obj()(layer, params)  
+        if isinstance(node, list):
+            mm_nodes += node 
+        else:
+            mm_nodes.append(node)
+    for node in mm_nodes:
         node.name = f"mm_{node.name}"
-         
         node.input_names = [f"var_{x}" for x in node.input_names]
         node.output_names = [f"var_{x}" for x in node.output_names]
-        if isinstance(node, list):
-            for s_node in node:
-                graph.addNode(s_node)
-        else:
-            graph.addNode(node)
-
+        mm_graph.addNode(node)
+        
     logger.info(f"optimize graph")
-    MergeBN(graph)
-    graph.resort_nodes()
-    return graph
+    MergeBN(mm_graph)
+    mm_graph.resort_nodes()
+    return mm_graph

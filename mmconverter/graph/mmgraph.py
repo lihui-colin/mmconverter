@@ -18,6 +18,8 @@ class MMGraph:
         self.name = name
         self._nodes = []
         self._dirty = False
+        self.input_nodes = []
+        self.output_nodes = []
 
     def __len__(self):
         return len(self._nodes)
